@@ -1,7 +1,8 @@
 import { GraphQLClient } from "graphql-request";
 import { storage } from "./utils/storage";
 
-const API_URL = "https://final-year-project-production-aa7c.up.railway.app/graphql";
+const API_URL = "https://distinguished-serenity-production.up.railway.app/graphql";
+
 
 export default async function getClient() {
   const token = await storage.getItem("token");
