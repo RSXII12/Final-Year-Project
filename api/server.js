@@ -152,6 +152,8 @@ await server.start();
 // ==== Express App ====
 const app = express();
 app.use(cors());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Bind Apollo middleware
 app.use(
