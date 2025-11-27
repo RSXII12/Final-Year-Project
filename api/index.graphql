@@ -1,0 +1,43 @@
+# --- Exercise Type ---
+type Exercise {
+  name: String
+  muscle: String
+  equipment: String
+  instructions: String
+}
+
+# --- Set Type ---
+type Set {
+  _id: ID!
+  exerciseName: String
+  reps: Int!
+  weight: Float
+  date: String
+  userId: ID!
+}
+
+# --- User Type ---
+type User {
+  _id: ID!
+  email: String!
+}
+
+# --- Auth Payload ---
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+# --- Query Definitions ---
+type Query {
+  exercises(muscle: String, name: String): [Exercise]
+  sets(exerciseName: String): [Set]
+  workouts: [Set]
+}
+
+# --- Mutation Definitions ---
+type Mutation {
+  signup(email: String!, password: String!): AuthPayload
+  login(email: String!, password: String!): AuthPayload
+  addWorkout(exerciseName: String!, reps: Int!, weight: Float): Set
+}
