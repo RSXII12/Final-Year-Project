@@ -7,7 +7,7 @@ import getClient from "../graphqlClient";
 
 const allWorkoutsQuery = gql`
   query {
-    workouts {
+    sets {
       _id
       exerciseName
       reps
@@ -16,6 +16,7 @@ const allWorkoutsQuery = gql`
     }
   }
 `;
+
 
 export default function WorkoutCalendar() {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -31,7 +32,8 @@ export default function WorkoutCalendar() {
   if (isLoading) return <ActivityIndicator />;
   if (error) return <Text>Error loading workouts</Text>;
 
-  const workouts = data?.workouts || [];
+  const workouts = data?.sets || [];
+
 
   const sorted = [...workouts].sort(
     (a, b) => new Date(b.date) - new Date(a.date)
@@ -52,10 +54,19 @@ export default function WorkoutCalendar() {
   }
 
   const workoutsForDay = selectedDate
-    ? sorted.filter(
-        (w) => new Date(w.date).toISOString().split("T")[0] === selectedDate
-      )
-    : [];
+  ? sorted.filter(
+      (w) =>
+        new Date(w.date).toISOString().split("T")[0] === selectedDate
+    )
+  : [];
+
+// GROUP BY exerciseName
+const grouped = workoutsForDay.reduce((acc, w) => {
+  if (!acc[w.exerciseName]) acc[w.exerciseName] = [];
+  acc[w.exerciseName].push(w);
+  return acc;
+}, {});
+
 
   return (
     <View style={styles.container}>
@@ -72,20 +83,23 @@ export default function WorkoutCalendar() {
         {selectedDate ? (
           workoutsForDay.length > 0 ? (
             <FlatList
-              data={workoutsForDay}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <View style={styles.card}>
-                  <Text style={styles.exerciseName}>{item.exerciseName}</Text>
-                  <Text style={styles.setText}>
-                    {item.reps} reps × {item.weight}kg
-                  </Text>
-                  <Text style={styles.dateText}>
-                    {new Date(item.date).toLocaleTimeString()}
-                  </Text>
-                </View>
-              )}
-            />
+              data={Object.keys(grouped)}
+              keyExtractor={(name) => name}
+              renderItem={({ item: exerciseName }) => (
+              <View style={styles.card}>
+                <Text style={styles.exerciseName}>{exerciseName}</Text>
+
+                {grouped[exerciseName].map((set) => (
+                  <View key={set._id} style={{ marginLeft: 12, marginTop: 5 }}>
+                    <Text style={styles.setText}>
+                      • {set.reps} reps × {set.weight}kg
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          />
+
           ) : (
             <Text style={styles.noData}>
               No workouts logged on this day
