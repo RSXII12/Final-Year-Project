@@ -186,6 +186,9 @@ app.use(cors());
 await server.start();
 server.applyMiddleware({ app, path: "/graphql" });
 
-app.listen(4000, () => {
-  console.log("🚀 Server running at http://localhost:4000/graphql");
+const PORT = process.env.PORT || 4000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
+
