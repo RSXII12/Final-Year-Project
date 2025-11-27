@@ -158,10 +158,13 @@ app.use(express.json());
 // Bind Apollo middleware
 app.use(
   "/graphql",
+  express.json(),
   expressMiddleware(server, {
-    context: async ({ req }) => ({
-      user: await getUserFromReq(req),
-    }),
+    context: async ({ req }) => {
+      return {
+        user: await getUserFromReq(req),
+      };
+    },
   })
 );
 

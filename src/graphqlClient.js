@@ -3,13 +3,20 @@ import { storage } from "./utils/storage";
 
 const API_URL = "https://distinguished-serenity-production.up.railway.app/graphql";
 
+let client;
 
-export default async function getClient() {
-  const token = await storage.getItem("token");
+export default function getClient() {
+  if (!client) {
+    client = new GraphQLClient(API_URL, {
+      credentials: "include",
+      headers: async () => {
+        const token = await storage.getItem("token");
+        return {
+          Authorization: token ? `Bearer ${token}` : "",
+        };
+      },
+    });
+  }
 
-  return new GraphQLClient(API_URL, {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-    },
-  });
+  return client;
 }
