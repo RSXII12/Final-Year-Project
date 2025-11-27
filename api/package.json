@@ -1,7 +1,6 @@
 {
   "name": "workouts-api",
   "version": "1.0.0",
-  "description": "Workout Tracker GraphQL API",
   "type": "module",
   "main": "server.js",
   "scripts": {
