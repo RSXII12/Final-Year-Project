@@ -7,7 +7,6 @@ import fetch from "node-fetch";
 import fs from "fs";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
-import { json } from "body-parser";
 
 const JWT_SECRET = "supersecretkey123";
 
