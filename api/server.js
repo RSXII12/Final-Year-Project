@@ -152,7 +152,6 @@ await server.start();
 // ==== Express App ====
 const app = express();
 app.use(cors());
-app.use(json());
 
 // Bind Apollo middleware
 app.use(
