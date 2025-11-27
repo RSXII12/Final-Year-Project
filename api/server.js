@@ -1,6 +1,7 @@
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import cors from "cors";
+import bodyParser from "body-parser";
 import fetch from "node-fetch";
 import fs from "fs";
 import mongoose from "mongoose";
@@ -39,8 +40,6 @@ const typeDefs = fs.readFileSync("./index.graphql", "utf-8");
 
 // ---- Auth Helper ----
 async function getUserFromReq(req) {
-  console.log("AUTH HEADER:", req.headers.authorization);
-
   const authHeader = req.headers.authorization || "";
   if (!authHeader) return null;
 
@@ -49,8 +48,7 @@ async function getUserFromReq(req) {
 
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch (err) {
-    console.warn("⚠ Invalid JWT:", err.message);
+  } catch {
     return null;
   }
 }
@@ -94,7 +92,7 @@ const resolvers = {
         reps: s.reps,
         weight: s.weight,
         userId: s.userId.toString(),
-        date: s.date ? s.date.toISOString() : null,
+        date: s.date?.toISOString() ?? null,
       }));
     },
 
@@ -109,7 +107,7 @@ const resolvers = {
         reps: s.reps,
         weight: s.weight,
         userId: s.userId.toString(),
-        date: s.date ? s.date.toISOString() : null,
+        date: s.date?.toISOString() ?? null,
       }));
     },
   },
@@ -150,7 +148,7 @@ const resolvers = {
     addWorkout: async (_, { exerciseName, reps, weight }, { user }) => {
       if (!user) throw new Error("Not authenticated");
 
-      const newSet = await Set.create({
+      const s = await Set.create({
         exerciseName,
         reps,
         weight,
@@ -158,12 +156,12 @@ const resolvers = {
       });
 
       return {
-        _id: newSet._id.toString(),
-        exerciseName: newSet.exerciseName,
-        reps: newSet.reps,
-        weight: newSet.weight,
-        userId: newSet.userId.toString(),
-        date: newSet.date ? newSet.date.toISOString() : null,
+        _id: s._id.toString(),
+        exerciseName: s.exerciseName,
+        reps: s.reps,
+        weight: s.weight,
+        userId: s.userId.toString(),
+        date: s.date?.toISOString() ?? null,
       };
     },
   },
@@ -180,15 +178,18 @@ const server = new ApolloServer({
 
 // ---- Express App ----
 const app = express();
-app.use(cors());
-// DO NOT add express.json(), Apollo v3 already handles JSON bodies
 
+// FIX: Apollo does NOT auto-parse JSON, add this:
+app.use(cors());
+app.use(bodyParser.json());
+
+// Start Apollo
 await server.start();
 server.applyMiddleware({ app, path: "/graphql" });
 
+// Railway required port
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 API running on port ${PORT}`);
 });
-
