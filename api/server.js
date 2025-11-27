@@ -1,28 +1,28 @@
 import express from "express";
-import { ApolloServer } from "apollo-server-express";
 import cors from "cors";
-import bodyParser from "body-parser";
-import fetch from "node-fetch";
-import fs from "fs";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import fetch from "node-fetch";
+import fs from "fs";
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+import { json } from "body-parser";
 
 const JWT_SECRET = "supersecretkey123";
 
-// ---- MongoDB ----
+// ==== MongoDB ====
 const MONGO_URI =
   "mongodb+srv://endorchase_db_user:t5loyZDEUdtZgO6r@cluster0.o2sq3vk.mongodb.net/workouts?retryWrites=true&w=majority";
 
 await mongoose.connect(MONGO_URI);
-console.log("✅ Connected to MongoDB Atlas");
+console.log("✅ Connected to MongoDB");
 
-// ---- Schemas ----
+// ==== Schemas ====
 const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   passwordHash: String,
 });
-
 const User = mongoose.model("User", UserSchema);
 
 const SetSchema = new mongoose.Schema({
@@ -32,19 +32,17 @@ const SetSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 });
-
 const Set = mongoose.model("Set", SetSchema);
 
-// ---- GraphQL Schema ----
+// ==== Load GraphQL schema ====
 const typeDefs = fs.readFileSync("./index.graphql", "utf-8");
 
-// ---- Auth Helper ----
+// ==== Auth ====
 async function getUserFromReq(req) {
-  const authHeader = req.headers.authorization || "";
-  if (!authHeader) return null;
+  const header = req.headers.authorization || "";
+  if (!header.startsWith("Bearer ")) return null;
 
-  const token = authHeader.replace("Bearer ", "").trim();
-  if (!token) return null;
+  const token = header.replace("Bearer ", "").trim();
 
   try {
     return jwt.verify(token, JWT_SECRET);
@@ -53,14 +51,13 @@ async function getUserFromReq(req) {
   }
 }
 
-// ---- Resolvers ----
+// ==== Resolvers ====
 const resolvers = {
   Query: {
     exercises: async (_, { muscle, name }) => {
       try {
         let url = "https://api.api-ninjas.com/v1/exercises";
         const params = new URLSearchParams();
-
         if (muscle) params.append("muscle", muscle);
         if (name) params.append("name", name);
 
@@ -72,8 +69,8 @@ const resolvers = {
 
         const data = await res.json();
         return Array.isArray(data) ? data : [];
-      } catch (err) {
-        console.error("❌ Exercise API Error:", err);
+      } catch (e) {
+        console.error(e);
         return [];
       }
     },
@@ -84,44 +81,26 @@ const resolvers = {
       const filter = { userId: user.userId };
       if (exerciseName) filter.exerciseName = exerciseName;
 
-      const results = await Set.find(filter).sort({ date: -1 });
-
-      return results.map((s) => ({
+      const rows = await Set.find(filter).sort({ date: -1 });
+      return rows.map((s) => ({
+        ...s.toObject(),
         _id: s._id.toString(),
-        exerciseName: s.exerciseName,
-        reps: s.reps,
-        weight: s.weight,
-        userId: s.userId.toString(),
-        date: s.date?.toISOString() ?? null,
-      }));
-    },
-
-    workouts: async (_, __, { user }) => {
-      if (!user) throw new Error("Not authenticated");
-
-      const results = await Set.find({ userId: user.userId }).sort({ date: -1 });
-
-      return results.map((s) => ({
-        _id: s._id.toString(),
-        exerciseName: s.exerciseName,
-        reps: s.reps,
-        weight: s.weight,
-        userId: s.userId.toString(),
-        date: s.date?.toISOString() ?? null,
+        date: s.date.toISOString(),
       }));
     },
   },
 
   Mutation: {
     signup: async (_, { email, password }) => {
-      const existing = await User.findOne({ email });
-      if (existing) throw new Error("Email already in use");
+      const exists = await User.findOne({ email });
+      if (exists) throw new Error("Email already used");
 
       const passwordHash = await bcrypt.hash(password, 10);
+
       const user = await User.create({ email, passwordHash });
 
       const token = jwt.sign(
-        { userId: user._id.toString(), email: user.email },
+        { userId: user._id.toString(), email },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -131,13 +110,13 @@ const resolvers = {
 
     login: async (_, { email, password }) => {
       const user = await User.findOne({ email });
-      if (!user) throw new Error("Invalid email or password");
+      if (!user) throw new Error("Invalid credentials");
 
       const valid = await bcrypt.compare(password, user.passwordHash);
-      if (!valid) throw new Error("Invalid email or password");
+      if (!valid) throw new Error("Invalid credentials");
 
       const token = jwt.sign(
-        { userId: user._id.toString(), email: user.email },
+        { userId: user._id.toString(), email },
         JWT_SECRET,
         { expiresIn: "7d" }
       );
@@ -156,40 +135,37 @@ const resolvers = {
       });
 
       return {
+        ...s.toObject(),
         _id: s._id.toString(),
-        exerciseName: s.exerciseName,
-        reps: s.reps,
-        weight: s.weight,
-        userId: s.userId.toString(),
-        date: s.date?.toISOString() ?? null,
+        date: s.date.toISOString(),
       };
     },
   },
 };
 
-// ---- Apollo Server v3 ----
+// ==== Apollo v4 Server ====
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: async ({ req }) => ({
-    user: await getUserFromReq(req),
-  }),
 });
-
-// ---- Express App ----
-const app = express();
-
-// FIX: Apollo does NOT auto-parse JSON, add this:
-app.use(cors());
-app.use(bodyParser.json());
-
-// Start Apollo
 await server.start();
-server.applyMiddleware({ app, path: "/graphql" });
 
-// Railway required port
+// ==== Express App ====
+const app = express();
+app.use(cors());
+app.use(json());
+
+// Bind Apollo middleware
+app.use(
+  "/graphql",
+  expressMiddleware(server, {
+    context: async ({ req }) => ({
+      user: await getUserFromReq(req),
+    }),
+  })
+);
+
 const PORT = process.env.PORT || 4000;
-
 app.listen(PORT, () => {
-  console.log(`🚀 API running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
