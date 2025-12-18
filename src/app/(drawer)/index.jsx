@@ -1,12 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, FlatList, Pressable, ActivityIndicator } from 'react-native';
-import ExerciseListItem from '../components/ExerciseListItem';
+import ExerciseListItem from '../../components/ExerciseListItem';
 import { useQuery } from '@tanstack/react-query';
 import { gql } from 'graphql-request';
-import getClient from '../graphqlClient';
+import getClient from '../../graphqlClient';
 import { Link, useRouter } from "expo-router";
 import { useContext, useEffect } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext";
 
 const exercisesQuery = gql`
   query exercises($muscle: String, $name: String) {
@@ -67,11 +67,6 @@ export default function ExercisesScreen() {
         renderItem={({ item }) => <ExerciseListItem item={item} />}
       />
 
-      <Link href="/workout-calendar" asChild>
-        <Pressable style={styles.historyButton}>
-          <Text style={styles.historyText}>🏋️ View Workout History</Text>
-        </Pressable>
-      </Link>
 
       <StatusBar style="auto" />
     </View>

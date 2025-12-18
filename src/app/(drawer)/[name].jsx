@@ -2,9 +2,9 @@ import { View, Text, StyleSheet, ActivityIndicator, FlatList } from "react-nativ
 import { useLocalSearchParams, Stack } from "expo-router";
 import { gql } from "graphql-request";
 import { useQuery } from "@tanstack/react-query";
-import getClient from "../graphqlClient";
-import NewSetInput from "../components/NewSetInput";
-import SetList from "../components/SetList";
+import getClient from "../../graphqlClient";
+import NewSetInput from "../../components/NewSetInput";
+import SetList from "../../components/SetList";
 import { useState } from "react";
 
 const exerciseDetailsQuery = gql`
