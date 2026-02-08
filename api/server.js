@@ -5,14 +5,14 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import fetch from "node-fetch";
 import fs from "fs";
+import "dotenv/config";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 
-const JWT_SECRET = "supersecretkey123";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // ==== MongoDB ====
-const MONGO_URI =
-  "mongodb+srv://endorchase_db_user:t5loyZDEUdtZgO6r@cluster0.o2sq3vk.mongodb.net/workouts?retryWrites=true&w=majority";
+const MONGO_URI = process.env.MONGO_URI;
 
 await mongoose.connect(MONGO_URI);
 console.log("✅ Connected to MongoDB");
