@@ -1,48 +1,65 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import fetch from "node-fetch";
+import path from "path";
 import fs from "fs";
-import "dotenv/config";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 
+import Exercise from "./models/Exercise.js";
+
+
+
+
+
+// ================== ENV ==================
+const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// ==== MongoDB ====
-const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  throw new Error("❌ Missing env var: MONGO_URI");
+}
+if (!JWT_SECRET) {
+  throw new Error("❌ Missing env var: JWT_SECRET");
+}
 
+// ================== MongoDB ==================
 await mongoose.connect(MONGO_URI);
 console.log("✅ Connected to MongoDB");
 
-// ==== Schemas ====
+// ================== Schemas / Models ==================
 const UserSchema = new mongoose.Schema({
-  email: { type: String, unique: true },
-  passwordHash: String,
+  email: { type: String, unique: true, required: true },
+  passwordHash: { type: String, required: true },
 });
-const User = mongoose.model("User", UserSchema);
+const User = mongoose.models.User || mongoose.model("User", UserSchema);
 
 const SetSchema = new mongoose.Schema({
-  exerciseName: String,
-  reps: Number,
-  weight: Number,
+  exerciseName: { type: String, required: true, index: true },
+  reps: { type: Number, required: true },
+  weight: { type: Number, required: true },
   date: { type: Date, default: Date.now },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 });
-const Set = mongoose.model("Set", SetSchema);
+const Set = mongoose.models.Set || mongoose.model("Set", SetSchema);
 
-// ==== Load GraphQL schema ====
+// ================== GraphQL Schema ==================
 const typeDefs = fs.readFileSync("./index.graphql", "utf-8");
 
-// ==== Auth ====
+// ================== Auth Helper ==================
+
+console.log("CWD =", process.cwd());
+console.log("schema exists at ./index.graphql ?", fs.existsSync("./index.graphql"));
+console.log("schema preview:", typeDefs.slice(0, 200));
+
 async function getUserFromReq(req) {
   const header = req.headers.authorization || "";
   if (!header.startsWith("Bearer ")) return null;
 
   const token = header.replace("Bearer ", "").trim();
-
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch {
@@ -50,28 +67,49 @@ async function getUserFromReq(req) {
   }
 }
 
-// ==== Resolvers ====
+// ================== Resolvers ==================
 const resolvers = {
   Query: {
-    exercises: async (_, { muscle, name }) => {
-      try {
-        let url = "https://api.api-ninjas.com/v1/exercises";
-        const params = new URLSearchParams();
-        if (muscle) params.append("muscle", muscle);
-        if (name) params.append("name", name);
+    exercises: async (_, { muscle, equipment, q, limit = 30, offset = 0 }) => {
+      const filter = {};
 
-        if (params.toString()) url += "?" + params.toString();
-
-        const res = await fetch(url, {
-          headers: { "X-API-KEY": "eChQVc6qCSiftntC9Bms6A==TOXcKlKrN0d2E3Oc" },
-        });
-
-        const data = await res.json();
-        return Array.isArray(data) ? data : [];
-      } catch (e) {
-        console.error(e);
-        return [];
+      // Search by name
+      if (q && q.trim()) {
+        filter.name = { $regex: q.trim(), $options: "i" };
       }
+
+      // Filter by anatomical muscle (match primary OR secondary arrays)
+      if (muscle && muscle.trim()) {
+        const m = muscle.trim().toLowerCase();
+        filter.$or = [{ primaryMuscles: m }, { secondaryMuscles: m }];
+      }
+
+      // Filter by equipment (equipment is an array in our DB)
+      if (equipment && equipment.trim()) {
+        const eq = equipment.trim().toLowerCase();
+        filter.equipment = { $in: [eq] };
+      }
+
+      const safeLimit = Math.min(Math.max(limit, 1), 100);
+      const safeOffset = Math.max(offset, 0);
+
+      const rows = await Exercise.find(filter)
+        .sort({ name: 1 })
+        .skip(safeOffset)
+        .limit(safeLimit);
+
+      // Map Mongo _id -> GraphQL id
+      return rows.map((e) => ({
+        id: e._id.toString(),
+        name: e.name,
+        category: e.category ?? null,
+        equipment: e.equipment ?? [],
+        primaryMuscles: e.primaryMuscles ?? [],
+        secondaryMuscles: e.secondaryMuscles ?? [],
+        instructions: e.instructions ?? [],
+        images: e.images ?? [],
+        difficulty: e.difficulty ?? null,
+      }));
     },
 
     sets: async (_, { exerciseName }, { user }) => {
@@ -81,6 +119,7 @@ const resolvers = {
       if (exerciseName) filter.exerciseName = exerciseName;
 
       const rows = await Set.find(filter).sort({ date: -1 });
+
       return rows.map((s) => ({
         ...s.toObject(),
         _id: s._id.toString(),
@@ -95,7 +134,6 @@ const resolvers = {
       if (exists) throw new Error("Email already used");
 
       const passwordHash = await bcrypt.hash(password, 10);
-
       const user = await User.create({ email, passwordHash });
 
       const token = jwt.sign(
@@ -142,29 +180,23 @@ const resolvers = {
   },
 };
 
-// ==== Apollo v4 Server ====
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-});
+// ================== Apollo v4 Server ==================
+const server = new ApolloServer({ typeDefs, resolvers });
 await server.start();
 
-// ==== Express App ====
+// ================== Express App ==================
 const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Bind Apollo middleware
 app.use(
   "/graphql",
   express.json(),
   expressMiddleware(server, {
-    context: async ({ req }) => {
-      return {
-        user: await getUserFromReq(req),
-      };
-    },
+    context: async ({ req }) => ({
+      user: await getUserFromReq(req),
+    }),
   })
 );
 

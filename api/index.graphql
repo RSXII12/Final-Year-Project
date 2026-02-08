@@ -1,43 +1,60 @@
-# --- Exercise Type ---
+# =========================
+# Exercise
+# =========================
 type Exercise {
-  name: String
-  muscle: String
-  equipment: String
-  instructions: String
+  id: ID!
+  name: String!
+  category: String
+  equipment: [String!]!
+  primaryMuscles: [String!]!
+  secondaryMuscles: [String!]!
+  instructions: [String!]!
+  images: [String!]!
+  difficulty: Int
 }
 
-# --- Set Type ---
+# =========================
+# Workout Set
+# =========================
 type Set {
   _id: ID!
   exerciseName: String
   reps: Int!
-  weight: Float
+  weight: Float!
   date: String
   userId: ID!
 }
 
-# --- User Type ---
+# =========================
+# Auth
+# =========================
 type User {
   _id: ID!
   email: String!
 }
 
-# --- Auth Payload ---
 type AuthPayload {
   token: String!
   user: User!
 }
 
-# --- Query Definitions ---
+# =========================
+# Queries / Mutations
+# =========================
 type Query {
-  exercises(muscle: String, name: String): [Exercise]
-  sets(exerciseName: String): [Set]
-  workouts: [Set]
+  exercises(
+    muscle: String
+    equipment: String
+    q: String
+    limit: Int = 30
+    offset: Int = 0
+  ): [Exercise!]!
+
+  sets(exerciseName: String): [Set!]!
 }
 
-# --- Mutation Definitions ---
 type Mutation {
-  signup(email: String!, password: String!): AuthPayload
-  login(email: String!, password: String!): AuthPayload
-  addWorkout(exerciseName: String!, reps: Int!, weight: Float): Set
+  signup(email: String!, password: String!): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+  addWorkout(exerciseName: String!, reps: Int!, weight: Float!): Set!
 }
