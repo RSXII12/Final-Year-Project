@@ -23,13 +23,15 @@ export default function DrawerLayout() {
         }}
       />
 
-      {/* hidden dynamic route */}
+      {/* Exercise details (hidden from drawer list) */}
       <Drawer.Screen
-        name="[name]"
+        name="exercise/[id]"
         options={{
+          title: "Exercise",
           drawerItemStyle: { display: "none" },
         }}
       />
+
     </Drawer>
   );
 }

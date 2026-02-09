@@ -3,7 +3,7 @@ import { Link } from "expo-router";
 
 export default function ExerciseListItem({ item }) {
   return (
-    <Link href={{ pathname: "/exercise/[id]", params: { id: item.id } }} asChild>
+    <Link href={{ pathname: "/(drawer)/exercise/[id]", params: { id: item.id } }} asChild>
       <Pressable style={styles.exerciseContainer}>
         <Text style={styles.exerciseName}>{item.name}</Text>
 
