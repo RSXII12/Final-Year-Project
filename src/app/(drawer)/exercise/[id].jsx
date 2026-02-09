@@ -1,8 +1,10 @@
+import React from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { gql } from "graphql-request";
-import getClient from "../../graphqlClient";
+import getClient from "@/utils/graphqlClient";
+
 
 const exerciseQuery = gql`
   query exercise($id: ID!) {
@@ -178,8 +180,6 @@ export default function ExerciseDetailsScreen() {
     </ScrollView>
   );
 }
-
-import React from "react";
 
 const styles = StyleSheet.create({
   container: { padding: 14 },

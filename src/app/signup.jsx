@@ -3,7 +3,7 @@ import React, { useState, useContext } from "react";
 import { View, TextInput, Button, Text, StyleSheet } from "react-native";
 import { gql } from "graphql-request";
 import { useRouter } from "expo-router";
-import getClient from "../graphqlClient";
+import getClient from "../utils/graphqlClient";
 import { AuthContext } from "../context/AuthContext";
 
 const SIGNUP_MUTATION = gql`

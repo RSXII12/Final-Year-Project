@@ -1,5 +1,7 @@
 import { GraphQLClient } from "graphql-request";
-import { storage } from "./utils/storage";
+import { storage } from "./storage";
+
+console.log("graphqlClient loaded");
 
 const API_URL = "https://distinguished-serenity-production.up.railway.app/graphql";
 

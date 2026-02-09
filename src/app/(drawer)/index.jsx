@@ -10,7 +10,7 @@ import {
 import ExerciseListItem from "../../components/ExerciseListItem";
 import { useQuery } from "@tanstack/react-query";
 import { gql } from "graphql-request";
-import getClient from "../../graphqlClient";
+import getClient from "../../utils/graphqlClient";
 import { useRouter } from "expo-router";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";

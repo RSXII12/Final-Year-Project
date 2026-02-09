@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TextInput, Button } from "react-native";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { gql } from "graphql-request";
-import getClient from "../graphqlClient";
+import getClient from "../utils/graphqlClient";
 
 const ADD_WORKOUT_MUTATION = gql`
   mutation AddWorkout($exerciseName: String!, $reps: Int!, $weight: Float) {

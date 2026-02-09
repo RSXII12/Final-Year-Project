@@ -3,7 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, StyleSheet } from "react-nativ
 import { Calendar } from "react-native-calendars";
 import { useQuery } from "@tanstack/react-query";
 import { gql } from "graphql-request";
-import getClient from "../graphqlClient";
+import getClient from "../utils/graphqlClient";
 
 const allWorkoutsQuery = gql`
   query {
