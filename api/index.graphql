@@ -50,6 +50,8 @@ type Query {
     offset: Int = 0
   ): [Exercise!]!
 
+  exercise(id: ID!): Exercise
+
   sets(exerciseName: String): [Set!]!
 }
 

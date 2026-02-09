@@ -1,18 +1,38 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, FlatList, Pressable, ActivityIndicator } from 'react-native';
-import ExerciseListItem from '../../components/ExerciseListItem';
-import { useQuery } from '@tanstack/react-query';
-import { gql } from 'graphql-request';
-import getClient from '../../graphqlClient';
-import { Link, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
+import ExerciseListItem from "../../components/ExerciseListItem";
+import { useQuery } from "@tanstack/react-query";
+import { gql } from "graphql-request";
+import getClient from "../../graphqlClient";
+import { useRouter } from "expo-router";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
 
 const exercisesQuery = gql`
-  query exercises($muscle: String, $name: String) {
-    exercises(muscle: $muscle, name: $name) {
+  query exercises(
+    $muscle: String
+    $q: String
+    $equipment: String
+    $limit: Int
+    $offset: Int
+  ) {
+    exercises(
+      muscle: $muscle
+      q: $q
+      equipment: $equipment
+      limit: $limit
+      offset: $offset
+    ) {
+      id
       name
-      muscle
+      primaryMuscles
       equipment
     }
   }
@@ -26,15 +46,21 @@ export default function ExercisesScreen() {
     if (!loading && !token) {
       router.replace("/login");
     }
-  }, [loading, token]);
+  }, [loading, token, router]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['exercises'],
+    queryKey: ["exercises", token],
     queryFn: async () => {
       const client = await getClient();
-      return client.request(exercisesQuery);
+      return client.request(exercisesQuery, {
+        muscle: null,
+        q: null,
+        equipment: null,
+        limit: 30,
+        offset: 0,
+      });
     },
-    enabled: !!token && !loading, 
+    enabled: !!token && !loading,
   });
 
   const handleLogout = async () => {
@@ -49,13 +75,11 @@ export default function ExercisesScreen() {
   if (!token) return null;
 
   if (error) {
-    return <Text> Something went wrong: {error.message} </Text>;
+    return <Text>Something went wrong: {error.message}</Text>;
   }
 
   return (
     <View style={styles.container}>
-
-      {/* Logout button */}
       <Pressable onPress={handleLogout} style={styles.logoutButton}>
         <Text style={styles.logoutText}>Logout</Text>
       </Pressable>
@@ -63,10 +87,9 @@ export default function ExercisesScreen() {
       <FlatList
         data={data?.exercises || []}
         contentContainerStyle={{ gap: 5 }}
-        keyExtractor={(item, index) => item.name + index}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => <ExerciseListItem item={item} />}
       />
-
 
       <StatusBar style="auto" />
     </View>
@@ -91,18 +114,5 @@ const styles = StyleSheet.create({
   logoutText: {
     color: "white",
     fontWeight: "600",
-  },
-
-  historyButton: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-  },
-
-  historyText: {
-    color: 'white',
-    fontWeight: '600',
   },
 });

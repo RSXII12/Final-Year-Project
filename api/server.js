@@ -70,6 +70,23 @@ async function getUserFromReq(req) {
 // ================== Resolvers ==================
 const resolvers = {
   Query: {
+    exercise: async (_, { id }) => {
+      const e = await Exercise.findById(id);
+      if (!e) return null;
+
+      return {
+        id: e._id.toString(),
+        name: e.name,
+        category: e.category ?? null,
+        equipment: e.equipment ?? [],
+        primaryMuscles: e.primaryMuscles ?? [],
+        secondaryMuscles: e.secondaryMuscles ?? [],
+        instructions: e.instructions ?? [],
+        images: e.images ?? [],
+        difficulty: e.difficulty ?? null,
+      };
+    },
+
     exercises: async (_, { muscle, equipment, q, limit = 30, offset = 0 }) => {
       const filter = {};
 
