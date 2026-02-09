@@ -18,6 +18,7 @@ type Exercise {
 # =========================
 type Set {
   _id: ID!
+  exerciseId: ID
   exerciseName: String
   reps: Int!
   weight: Float!
@@ -52,11 +53,11 @@ type Query {
 
   exercise(id: ID!): Exercise
 
-  sets(exerciseName: String): [Set!]!
+  sets(exerciseId: ID, exerciseName: String): [Set!]!
 }
 
 type Mutation {
   signup(email: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
-  addWorkout(exerciseName: String!, reps: Int!, weight: Float!): Set!
+  addWorkout(exerciseId: ID!, exerciseName: String!, reps: Int!, weight: Float!): Set!
 }

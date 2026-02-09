@@ -38,6 +38,7 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 
 const SetSchema = new mongoose.Schema({
+  exerciseId: { type: mongoose.Schema.Types.ObjectId, ref: "Exercise" }, // using this for the new database, don't forget to update resolvers
   exerciseName: { type: String, required: true, index: true },
   reps: { type: Number, required: true },
   weight: { type: Number, required: true },
@@ -129,11 +130,12 @@ const resolvers = {
       }));
     },
 
-    sets: async (_, { exerciseName }, { user }) => {
+    sets: async (_, { exerciseId, exerciseName }, { user }) => {
       if (!user) throw new Error("Not authenticated");
 
       const filter = { userId: user.userId };
-      if (exerciseName) filter.exerciseName = exerciseName;
+      if (exerciseId) filter.exerciseId = exerciseId;
+      else if (exerciseName) filter.exerciseName = exerciseName; // fallback
 
       const rows = await Set.find(filter).sort({ date: -1 });
 
@@ -143,6 +145,7 @@ const resolvers = {
         date: s.date.toISOString(),
       }));
     },
+
   },
 
   Mutation: {
@@ -178,10 +181,11 @@ const resolvers = {
       return { token, user };
     },
 
-    addWorkout: async (_, { exerciseName, reps, weight }, { user }) => {
+    addWorkout: async (_, { exerciseId,exerciseName, reps, weight }, { user }) => {
       if (!user) throw new Error("Not authenticated");
 
       const s = await Set.create({
+        exerciseId,
         exerciseName,
         reps,
         weight,
