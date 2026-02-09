@@ -29,6 +29,7 @@ export default function DrawerLayout() {
         options={{
           title: "Exercise",
           drawerItemStyle: { display: "none" },
+          headerLeft: () => null, // allow default back button instead of drawer toggle on exercise details screen
         }}
       />
 

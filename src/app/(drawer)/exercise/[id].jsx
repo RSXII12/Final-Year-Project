@@ -1,6 +1,7 @@
 import React from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { gql } from "graphql-request";
 import getClient from "@/utils/graphqlClient";
@@ -89,6 +90,7 @@ export default function ExerciseDetailsScreen() {
     },
   });
 
+
   if (isLoading) return <ActivityIndicator style={{ marginTop: 30 }} />;
   if (error) return <Text style={{ padding: 10 }}>Error: {error.message}</Text>;
 
@@ -112,7 +114,30 @@ export default function ExerciseDetailsScreen() {
 
   const history = setsData?.sets ?? [];
 
+    const headerBack = (
+    <Stack.Screen
+      options={{
+        title: "Exercise",
+        headerLeft: () => (
+          <Pressable
+            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace("/(drawer)");
+            }}
+            style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#000" />
+          </Pressable>
+        ),
+      }}
+    />
+  );
+
+
   return (
+
+    <>
+    {headerBack}
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>{ex.name}</Text>
 
@@ -177,7 +202,8 @@ export default function ExerciseDetailsScreen() {
           </View>
         ))
       )}
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 
